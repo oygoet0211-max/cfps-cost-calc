@@ -36,23 +36,23 @@ doc = Document(DOCX_PATH)
 # DOCX에서 추출한 정보:
 # - 2L 배양 → wet cell ~20 g → 최종 상등액 ~12 mL
 # - 15 µL/rxn, 4 µL extract → ~3000 rxns per 2L batch
-RXNS_PER_BATCH = 3000  # 2 L E. coli 배양 → ~3000 반응 분량
+RXNS_PER_BATCH = 3000  # 2 L E. coli 배양 → ~3000 반응 분량 (DOCX: 12 mL / 4 µL × rxn)
 CULTURE_VOLUME_L = 2
 
 # Table 0: 2x YT-PG 배지 (1 L 기준) → 2L 배양
-# Tryptone 16g, Yeast extract 10g, NaCl 5g, Glucose 18.02g/100mL
 MEDIUM_COMPONENTS = [
-    # (이름, 약자, g/L_of_medium, 카테고리, 공급사)
-    ('Tryptone', 'Tryp', 16 * CULTURE_VOLUME_L, '기타', 'BD Difco'),
-    ('Yeast extract', 'YE', 10 * CULTURE_VOLUME_L, '기타', 'BD Difco'),
-    ('NaCl', 'NaCl', 5 * CULTURE_VOLUME_L, '버퍼/염류', 'Sigma'),
-    ('Glucose (10X)', 'Glc', 18.02 * CULTURE_VOLUME_L, '에너지', 'Sigma'),
+    # (이름, g/L_of_medium × 2L, 카테고리, 공급사)
+    ('Tryptone', 16 * CULTURE_VOLUME_L, '기타', 'BD Difco'),
+    ('Yeast extract', 10 * CULTURE_VOLUME_L, '기타', 'BD Difco'),
+    ('NaCl', 5 * CULTURE_VOLUME_L, '버퍼/염류', 'Sigma'),
+    ('Glucose (10X)', 18.02 * CULTURE_VOLUME_L, '에너지', 'Sigma'),
 ]
 
-# Table 1: Wash buffer (1 L per 2 L culture — 총 3회 세척 = 3 L)
-# Table 2: Lysis buffer (100 mL per 2 L culture)
-WASH_TOTAL_ML   = 1000 * 3 * CULTURE_VOLUME_L   # 3 L × 2L배양 = 6 L wash
-LYSIS_TOTAL_ML  = 100 * CULTURE_VOLUME_L         # 200 mL lysis
+# DOCX 원문 기준 실제 필요량:
+#   Wash buffer : "Cell 2 L culture 당 1 L 필요" → 3회 세척 합산 1 L
+#   Lysis buffer: "Cell 2 L culture 당 약 25 mL 필요"
+WASH_TOTAL_ML  = 1000   # 1,000 mL / 2L 배양 (3회 wash 합산)
+LYSIS_TOTAL_ML = 25     # 25 mL / 2L 배양
 
 # DTT: 100 mM in 10 mL per 1L wash → moles per mL
 # K(OAc): 6M in 10 mL per 1L wash, Mg(OAc)2: 1.4M in 10 mL, Tris-OAc: 1M in 10 mL
@@ -72,7 +72,7 @@ PREP_BUFFER_COMPONENTS = [
 # 여기서는 '원 배치 기준 총량'만 기록하고 반응당 사용량은 '상징적 값 0'으로 표시
 extract_prep_rows = []
 
-for name, abbr, g_per_batch, cat, supplier in MEDIUM_COMPONENTS:
+for name, g_per_batch, cat, supplier in MEDIUM_COMPONENTS:
     extract_prep_rows.append({
         '포함': True,
         '성분': f'{name} (배지, 배치당 {g_per_batch}g)',
@@ -90,9 +90,11 @@ for name, abbr, g_per_batch, cat, supplier in MEDIUM_COMPONENTS:
     })
 
 for name, abbr, cat, wash_ml_per_L, lysis_ml_per_L, unit, supplier in PREP_BUFFER_COMPONENTS:
-    total_ml = (wash_ml_per_L * WASH_TOTAL_ML / 1000
-                + lysis_ml_per_L * LYSIS_TOTAL_ML / 1000)
-    # 반응당 등가 부피 (배치 내 총 사용량 / 배치 반응 수)
+    # 배치 내 총 사용량 (mL) = 버퍼 조성비(mL/L) × 버퍼 총량(L) + 용해 버퍼 기여분
+    wash_used_ml  = wash_ml_per_L  * (WASH_TOTAL_ML  / 1000)
+    lysis_used_ml = lysis_ml_per_L * (LYSIS_TOTAL_ML / 1000)
+    total_ml = wash_used_ml + lysis_used_ml
+    # 반응당 등가 부피 (µL) = 배치 총 사용량 / 배치 반응 수
     vol_per_rxn_ul = total_ml / RXNS_PER_BATCH * 1000
     extract_prep_rows.append({
         '포함': True,
