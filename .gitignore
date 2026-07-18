@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.env.*
+reagents_preset.json
+*.xlsx
+*.xls
+*.csv
+*.pdf
+.streamlit/secrets.toml
+test_parser.py
