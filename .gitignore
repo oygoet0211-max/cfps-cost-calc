@@ -4,9 +4,7 @@ __pycache__/
 .env
 .env.*
 reagents_preset.json
-*.xlsx
-*.xls
-*.csv
+# data/ 폴더의 프로토콜 파일은 버전 관리에 포함 (아래에서 예외 처리)
 *.pdf
 .streamlit/secrets.toml
 test_parser.py
